@@ -1,0 +1,56 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      kiwi-service:
+        image: custom-n8n/kiwi-service:latest
+        ports:
+          - 3000:3000
+      wink-service:
+        image: custom-n8n/wink-service:latest
+        ports:
+          - 3001:3001
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: tests/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: tests
+      run: npm ci
+    
+    - name: Wait for services
+      run: |
+        timeout 60s bash -c 'until curl -s http://localhost:3000/health; do sleep 1; done'
+        timeout 60s bash -c 'until curl -s http://localhost:3001/health; do sleep 1; done'
+    
+    - name: Run tests
+      working-directory: tests
+      run: |
+        chmod +x run-tests.sh
+        ./run-tests.sh
+      env:
+        KIWI_SERVICE_URL: http://localhost:3000
+        WINK_SERVICE_URL: http://localhost:3001
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: tests/test-results/ 
