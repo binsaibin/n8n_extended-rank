@@ -10,72 +10,66 @@ env:
   KIWI_SERVICE_URL: http://localhost:3000
   WINK_SERVICE_URL: http://localhost:3001
   NODE_ENV: test
+  KIWI_IMAGE_NAME: ghcr.io/${{ github.repository }}/kiwi-service
+  WINK_IMAGE_NAME: ghcr.io/${{ github.repository }}/wink-service
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    
+    services:
+      kiwi-service:
+        image: ${{ env.KIWI_IMAGE_NAME }}:latest
+        environment:
+          - NODE_ENV=test
+        ports:
+          - 3000:3000
+        options: >-
+          --health-cmd "curl -f http://localhost:3000/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      wink-service:
+        image: ${{ env.WINK_IMAGE_NAME }}:latest
+        environment:
+          - NODE_ENV=test
+        ports:
+          - 3001:3001
+        options: >-
+          --health-cmd "curl -f http://localhost:3001/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: './tests/package-lock.json'
+      
       - name: Install Dependencies
         working-directory: ./tests
         run: npm ci
-      - name: Run Tests
+      
+      - name: Run Integration Tests
         working-directory: ./tests
-        run: npm run test:all
-
-    services:
-      kiwi-service:
-        image: ${{ env.KIWI_IMAGE_NAME }}:latest
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 3000:3000
-      wink-service:
-        image: ${{ env.WINK_IMAGE_NAME }}:latest
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 3001:3001
-
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: tests/package-lock.json
-    
-    - name: Install dependencies
-      working-directory: tests
-      run: npm ci
-    
-    - name: Wait for services
-      run: |
-        timeout 60s bash -c 'until curl -s http://localhost:3000/health; do sleep 1; done'
-        timeout 60s bash -c 'until curl -s http://localhost:3001/health; do sleep 1; done'
-    
-    - name: Run tests
-      working-directory: tests
-      run: |
-        chmod +x run-tests.sh
-        ./run-tests.sh
-      env:
-        KIWI_SERVICE_URL: http://localhost:3000
-        WINK_SERVICE_URL: http://localhost:3001
-    
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results
-        path: tests/test-results/ 
+        run: npm run test:integration
+        env:
+          KIWI_SERVICE_URL: http://localhost:3000
+          WINK_SERVICE_URL: http://localhost:3001
+      
+      - name: Run Unit Tests
+        working-directory: ./tests
+        run: npm run test:unit
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: tests/test-results/ 
