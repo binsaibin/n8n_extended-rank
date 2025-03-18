@@ -15,12 +15,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Run API Tests
-        run: |
-          cd tests
-          npm install
-          npm run test:all
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './tests/package-lock.json'
+      - name: Install Dependencies
+        working-directory: ./tests
+        run: npm ci
+      - name: Run Tests
+        working-directory: ./tests
+        run: npm run test:all
 
     services:
       kiwi-service:
