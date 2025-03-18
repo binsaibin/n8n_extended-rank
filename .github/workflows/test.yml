@@ -3,20 +3,32 @@ name: Test Pipeline
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+
+env:
+  KIWI_SERVICE_URL: http://localhost:3000
+  WINK_SERVICE_URL: http://localhost:3001
+  NODE_ENV: test
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     
     services:
       kiwi-service:
-        image: custom-n8n/kiwi-service:latest
+        image: ${{ env.KIWI_IMAGE_NAME }}:latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
         ports:
           - 3000:3000
       wink-service:
-        image: custom-n8n/wink-service:latest
+        image: ${{ env.WINK_IMAGE_NAME }}:latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
         ports:
           - 3001:3001
 
