@@ -1,0 +1,11 @@
+{
+  "name": "kiwi_addon",
+  "version": "1.0.0",
+  "main": "build/Release/kiwi_addon.node",
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "scripts": {
+    "build": "node-gyp rebuild"
+  }
+}

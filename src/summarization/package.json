@@ -1,0 +1,15 @@
+{
+  "name": "textrank-summarization",
+  "version": "1.0.0",
+  "description": "TextRank summarization bridge for connecting language services",
+  "main": "textrank-bridge.js",
+  "scripts": {
+    "test": "node tests/test-textrank-bridge.js"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "node-summarizer": "^1.0.7"
+  },
+  "author": "",
+  "license": "MIT"
+} 

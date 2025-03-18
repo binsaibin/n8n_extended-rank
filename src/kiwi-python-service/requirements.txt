@@ -1,0 +1,4 @@
+kiwipiepy==0.20.0
+flask==2.3.3
+gunicorn==21.2.0
+werkzeug==2.3.8 

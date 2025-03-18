@@ -1,0 +1,23 @@
+{
+  "name": "nlp-services-tests",
+  "version": "1.0.0",
+  "description": "Test scripts for Kiwi and Wink NLP services",
+  "main": "index.js",
+  "scripts": {
+    "test:kiwi": "node kiwi-test/test-kiwi-service.js",
+    "test:wink": "node wink-test/test-wink-service.js",
+    "test:all": "npm run test:kiwi && npm run test:wink"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "assert": "^2.1.0"
+  },
+  "keywords": [
+    "test",
+    "nlp",
+    "kiwi",
+    "wink"
+  ],
+  "author": "",
+  "license": "MIT"
+} 
