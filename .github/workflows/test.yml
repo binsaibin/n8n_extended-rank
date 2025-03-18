@@ -19,9 +19,9 @@ jobs:
     
     services:
       kiwi-service:
-        image: ${{ env.KIWI_IMAGE_NAME }}:latest
-        environment:
-          - NODE_ENV=test
+        image: ghcr.io/${{ github.repository }}/kiwi-service:latest
+        env:
+          NODE_ENV: test
         ports:
           - 3000:3000
         options: >-
@@ -31,9 +31,9 @@ jobs:
           --health-retries 5
       
       wink-service:
-        image: ${{ env.WINK_IMAGE_NAME }}:latest
-        environment:
-          - NODE_ENV=test
+        image: ghcr.io/${{ github.repository }}/wink-service:latest
+        env:
+          NODE_ENV: test
         ports:
           - 3001:3001
         options: >-
@@ -44,6 +44,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose-plugin
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
