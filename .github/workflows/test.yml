@@ -1,8 +1,10 @@
-name: Test Pipeline
+name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
   KIWI_SERVICE_URL: http://localhost:3000
@@ -12,10 +14,14 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run API Tests
+        run: |
+          cd tests
+          npm install
+          npm run test:all
+
     services:
       kiwi-service:
         image: ${{ env.KIWI_IMAGE_NAME }}:latest
