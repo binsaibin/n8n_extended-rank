@@ -24,8 +24,6 @@ jobs:
           NODE_ENV: test
         ports:
           - 3000:3000
-        volumes:
-          - ./logs:/app/logs
         options: >-
           --health-cmd "curl -f http://localhost:3000/health || exit 1"
           --health-interval 10s
@@ -38,8 +36,6 @@ jobs:
           NODE_ENV: test
         ports:
           - 3001:3001
-        volumes:
-          - ./logs:/app/logs
         options: >-
           --health-cmd "curl -f http://localhost:3001/health || exit 1"
           --health-interval 10s
@@ -67,12 +63,10 @@ jobs:
       
       - name: Create Required Directories
         run: |
-          sudo mkdir -p ./logs
-          sudo chmod -R 777 ./logs
-          sudo chown -R $USER:$USER ./logs
+          sudo mkdir -p /app/logs
+          sudo chmod -R 777 /app/logs
           sudo mkdir -p ./tests/test-results
           sudo chmod -R 777 ./tests/test-results
-          sudo chown -R $USER:$USER ./tests/test-results
 
       - name: Install Dependencies
         working-directory: ./tests
@@ -102,7 +96,7 @@ jobs:
       - name: List Test Results
         run: |
           ls -la ./tests/test-results/
-          ls -la ./logs/
+          ls -la /app/logs/
 
       - name: Upload Test Results
         if: always()
@@ -111,5 +105,5 @@ jobs:
           name: test-results
           path: |
             ./tests/test-results/
-            ./logs/
+            /app/logs/
           if-no-files-found: warn 

@@ -17,17 +17,20 @@ COPY src/kiwi-python-service/kiwi_service.py .
 COPY src/kiwi-python-service/textrank_endpoint.py .
 
 # 로그 디렉토리 생성 및 권한 설정
-RUN mkdir -p /app/logs \
-    && touch /app/logs/textrank_service.log \
-    && chmod -R 777 /app/logs \
-    && chmod 666 /app/logs/textrank_service.log
+RUN mkdir -p /app/logs && \
+    chmod -R 777 /app/logs && \
+    touch /app/logs/textrank_service.log && \
+    chmod 666 /app/logs/textrank_service.log
 
-# 일반 사용자로 실행
-RUN useradd -m appuser
+# 일반 사용자 생성 및 권한 설정
+RUN useradd -m appuser && \
+    chown -R appuser:appuser /app
+
+# 사용자 전환
 USER appuser
 
 # 포트 설정
 EXPOSE 3000
 
 # 서비스 실행
-CMD ["gunicorn", "--bind", "0.0.0.0:3000", "kiwi_service:app", "--timeout", "120", "--workers", "4"]
+CMD ["gunicorn", "--bind", "0.0.0.0:3000", "kiwi_service:app", "--timeout", "120", "--workers", "4", "--log-file", "/app/logs/textrank_service.log"]
