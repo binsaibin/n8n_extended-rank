@@ -24,8 +24,10 @@ jobs:
           NODE_ENV: test
         ports:
           - 3000:3000
+        volumes:
+          - ./logs:/app/logs
         options: >-
-          --health-cmd "curl -f http://localhost:3000/health"
+          --health-cmd "curl -f http://localhost:3000/health || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -36,8 +38,10 @@ jobs:
           NODE_ENV: test
         ports:
           - 3001:3001
+        volumes:
+          - ./logs:/app/logs
         options: >-
-          --health-cmd "curl -f http://localhost:3001/health"
+          --health-cmd "curl -f http://localhost:3001/health || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -65,15 +69,19 @@ jobs:
       
       - name: Create Required Directories
         run: |
-          mkdir -p tests/test-results
-          mkdir -p app/logs
-          chmod -R 777 app/logs
-          touch app/logs/textrank_service.log
-          chmod 666 app/logs/textrank_service.log
+          sudo mkdir -p logs
+          sudo chmod -R 777 logs
+          sudo mkdir -p tests/test-results
+          sudo chmod -R 777 tests/test-results
 
       - name: Install Dependencies
         working-directory: ./tests
         run: npm ci
+      
+      - name: Wait for services
+        run: |
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3000/health)" != "200" ]]; do sleep 5; done' || exit 1
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3001/health)" != "200" ]]; do sleep 5; done' || exit 1
       
       - name: Run Integration Tests
         working-directory: ./tests
@@ -95,4 +103,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: tests/test-results/ 
+          path: |
+            tests/test-results/
+            logs/ 

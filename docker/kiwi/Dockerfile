@@ -16,6 +16,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/kiwi-python-service/kiwi_service.py .
 COPY src/kiwi-python-service/textrank_endpoint.py .
 
+# 로그 디렉토리 생성 및 권한 설정
+RUN mkdir -p /app/logs \
+    && touch /app/logs/textrank_service.log \
+    && chmod -R 777 /app/logs \
+    && chmod 666 /app/logs/textrank_service.log
+
 # 일반 사용자로 실행
 RUN useradd -m appuser
 USER appuser
