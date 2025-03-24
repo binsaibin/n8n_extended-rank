@@ -57,10 +57,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './tests/package-lock.json'
       
-      - name: Verify Service Logs
+      - name: View Service Logs
         run: |
-          docker exec $(docker ps -q --filter "name=kiwi") ls -la /app/logs/
-          docker exec $(docker ps -q --filter "name=kiwi") cat /app/logs/textrank_service.log || true
+          echo "Kiwi Service Logs:"
+          docker logs $(docker ps -q --filter "name=kiwi") || true
+          echo "Wink Service Logs:"
+          docker logs $(docker ps -q --filter "name=wink") || true
       
       - name: Create Test Results Directory
         run: |
