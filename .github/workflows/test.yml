@@ -29,6 +29,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
       
       wink-service:
         image: ghcr.io/${{ github.repository }}/wink-service:latest
@@ -41,6 +42,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 30s
 
     steps:
       - uses: actions/checkout@v3
@@ -61,12 +63,10 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './tests/package-lock.json'
       
-      - name: Create Required Directories
+      - name: Create Test Results Directory
         run: |
-          sudo mkdir -p /app/logs
-          sudo chmod -R 777 /app/logs
-          sudo mkdir -p ./tests/test-results
-          sudo chmod -R 777 ./tests/test-results
+          mkdir -p ./tests/test-results
+          chmod -R 777 ./tests/test-results
 
       - name: Install Dependencies
         working-directory: ./tests
@@ -74,13 +74,14 @@ jobs:
       
       - name: Wait for services
         run: |
-          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3000/health)" != "200" ]]; do sleep 5; done' || exit 1
-          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3001/health)" != "200" ]]; do sleep 5; done' || exit 1
+          echo "Waiting for kiwi-service..."
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3000/health)" != "200" ]]; do echo "Waiting for kiwi-service..."; sleep 5; done' || exit 1
+          echo "Waiting for wink-service..."
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3001/health)" != "200" ]]; do echo "Waiting for wink-service..."; sleep 5; done' || exit 1
       
       - name: Run Integration Tests
         working-directory: ./tests
         run: |
-          mkdir -p test-results
           npm run test:integration || true
           find . -name "*.xml" -exec cp {} test-results/ \;
         env:
@@ -95,15 +96,13 @@ jobs:
 
       - name: List Test Results
         run: |
+          echo "Test Results Directory Contents:"
           ls -la ./tests/test-results/
-          ls -la /app/logs/
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: |
-            ./tests/test-results/
-            /app/logs/
+          path: ./tests/test-results/
           if-no-files-found: warn 
