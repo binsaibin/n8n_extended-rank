@@ -37,10 +37,27 @@ jobs:
 
       - name: Start Services
         run: |
+          echo "Starting kiwi-service..."
           docker run -d --name kiwi-service -p 3000:3000 ${{ env.KIWI_IMAGE_NAME }}:latest
+          echo "Starting wink-service..."
           docker run -d --name wink-service -p 3001:3001 ${{ env.WINK_IMAGE_NAME }}:latest
           echo "Started services"
           docker ps
+
+      - name: Initial Service Check
+        run: |
+          echo "Checking if services are running..."
+          if ! docker ps | grep -q kiwi-service; then
+            echo "Error: kiwi-service is not running"
+            docker logs kiwi-service || true
+            exit 1
+          fi
+          if ! docker ps | grep -q wink-service; then
+            echo "Error: wink-service is not running"
+            docker logs wink-service || true
+            exit 1
+          fi
+          echo "Both services are running"
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -68,9 +85,52 @@ jobs:
       - name: Wait for services
         run: |
           echo "Waiting for kiwi-service..."
-          timeout 90s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3000/health)" != "200" ]]; do echo "Waiting for kiwi-service..."; sleep 5; done' || exit 1
+          ATTEMPTS=0
+          MAX_ATTEMPTS=18  # 90 seconds total
+          
+          while true; do
+            if [[ $ATTEMPTS -ge $MAX_ATTEMPTS ]]; then
+              echo "Error: Services failed to become healthy after 90 seconds"
+              echo "Kiwi Service Logs:"
+              docker logs kiwi-service
+              echo "Kiwi Service Status:"
+              docker inspect kiwi-service
+              exit 1
+            fi
+            
+            KIWI_STATUS=$(curl -s -o /dev/null -w '%{http_code}' localhost:3000/health || echo "000")
+            if [[ "$KIWI_STATUS" == "200" ]]; then
+              echo "Kiwi service is healthy"
+              break
+            fi
+            
+            echo "Attempt $((ATTEMPTS+1))/$MAX_ATTEMPTS: Kiwi service returned status $KIWI_STATUS"
+            ATTEMPTS=$((ATTEMPTS+1))
+            sleep 5
+          done
+          
           echo "Waiting for wink-service..."
-          timeout 90s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:3001/health)" != "200" ]]; do echo "Waiting for wink-service..."; sleep 5; done' || exit 1
+          ATTEMPTS=0
+          while true; do
+            if [[ $ATTEMPTS -ge $MAX_ATTEMPTS ]]; then
+              echo "Error: Wink service failed to become healthy after 90 seconds"
+              echo "Wink Service Logs:"
+              docker logs wink-service
+              echo "Wink Service Status:"
+              docker inspect wink-service
+              exit 1
+            fi
+            
+            WINK_STATUS=$(curl -s -o /dev/null -w '%{http_code}' localhost:3001/health || echo "000")
+            if [[ "$WINK_STATUS" == "200" ]]; then
+              echo "Wink service is healthy"
+              break
+            fi
+            
+            echo "Attempt $((ATTEMPTS+1))/$MAX_ATTEMPTS: Wink service returned status $WINK_STATUS"
+            ATTEMPTS=$((ATTEMPTS+1))
+            sleep 5
+          done
       
       - name: Run Integration Tests
         working-directory: ./tests
