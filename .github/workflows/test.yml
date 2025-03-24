@@ -49,11 +49,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      # Docker 설정
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
-      # Docker Compose 설치 (apt를 통한 설치)
       - name: Install Docker Compose
         run: |
           sudo apt-get update
@@ -69,10 +67,12 @@ jobs:
       
       - name: Create Required Directories
         run: |
-          sudo mkdir -p logs
-          sudo chmod -R 777 logs
-          sudo mkdir -p tests/test-results
-          sudo chmod -R 777 tests/test-results
+          sudo mkdir -p ./logs
+          sudo chmod -R 777 ./logs
+          sudo chown -R $USER:$USER ./logs
+          sudo mkdir -p ./tests/test-results
+          sudo chmod -R 777 ./tests/test-results
+          sudo chown -R $USER:$USER ./tests/test-results
 
       - name: Install Dependencies
         working-directory: ./tests
@@ -86,6 +86,7 @@ jobs:
       - name: Run Integration Tests
         working-directory: ./tests
         run: |
+          mkdir -p test-results
           npm run test:integration || true
           find . -name "*.xml" -exec cp {} test-results/ \;
         env:
@@ -98,11 +99,17 @@ jobs:
           npm run test:unit || true
           find . -name "*.xml" -exec cp {} test-results/ \;
 
+      - name: List Test Results
+        run: |
+          ls -la ./tests/test-results/
+          ls -la ./logs/
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: |
-            tests/test-results/
-            logs/ 
+            ./tests/test-results/
+            ./logs/
+          if-no-files-found: warn 
